@@ -11,3 +11,54 @@ INFO: 2022/12/07 11:07:13 main.go:18: Starting Server
 INFO: 2022/12/07 11:08:00 main.go:18: Starting Server
 INFO: 2022/12/07 11:12:13 main.go:18: Starting Server
 INFO: 2022/12/07 11:14:05 main.go:18: Starting Server
+INFO: 2022/12/07 12:22:39 main.go:19: Creating store
+INFO: 2022/12/07 12:22:39 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 12:22:39 main.go:30: Starting Server
+INFO: 2022/12/07 12:44:44 main.go:19: Creating store
+INFO: 2022/12/07 12:44:44 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 12:44:44 main.go:30: Starting Server
+INFO: 2022/12/07 13:01:49 main.go:19: Creating store
+INFO: 2022/12/07 13:01:49 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:01:49 main.go:30: Starting Server
+INFO: 2022/12/07 13:03:32 main.go:19: Creating store
+INFO: 2022/12/07 13:03:32 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:03:32 main.go:30: Starting Server
+INFO: 2022/12/07 13:04:40 main.go:19: Creating store
+INFO: 2022/12/07 13:04:40 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:04:40 main.go:30: Starting Server
+INFO: 2022/12/07 13:05:21 main.go:19: Creating store
+INFO: 2022/12/07 13:05:21 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:05:21 main.go:30: Starting Server
+INFO: 2022/12/07 13:06:48 main.go:19: Creating store
+INFO: 2022/12/07 13:06:48 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:06:48 main.go:30: Starting Server
+INFO: 2022/12/07 13:08:58 main.go:19: Creating store
+INFO: 2022/12/07 13:08:58 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:08:58 main.go:30: Starting Server
+INFO: 2022/12/07 13:10:33 main.go:19: Creating store
+INFO: 2022/12/07 13:10:33 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:10:33 main.go:30: Starting Server
+INFO: 2022/12/07 13:17:26 main.go:19: Creating store
+INFO: 2022/12/07 13:17:26 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:17:26 main.go:30: Starting Server
+INFO: 2022/12/07 13:23:30 main.go:19: Creating store
+INFO: 2022/12/07 13:23:30 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:23:30 main.go:30: Starting Server
+INFO: 2022/12/07 13:51:50 main.go:19: Creating store
+INFO: 2022/12/07 13:51:50 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 13:51:50 main.go:30: Starting Server
+INFO: 2022/12/07 14:13:41 main.go:19: Creating store
+INFO: 2022/12/07 14:13:41 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 14:13:41 main.go:30: Starting Server
+INFO: 2022/12/07 14:14:37 main.go:19: Creating store
+INFO: 2022/12/07 14:14:37 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 14:14:37 main.go:30: Starting Server
+INFO: 2022/12/07 14:16:42 main.go:19: Creating store
+INFO: 2022/12/07 14:16:42 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 14:16:42 main.go:30: Starting Server
+INFO: 2022/12/07 14:17:15 main.go:19: Creating store
+INFO: 2022/12/07 14:17:15 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 14:17:15 main.go:30: Starting Server
+INFO: 2022/12/07 14:23:18 main.go:19: Creating store
+INFO: 2022/12/07 14:23:18 main.go:22: Setting up REST endpoints
+INFO: 2022/12/07 14:23:18 main.go:30: Starting Server

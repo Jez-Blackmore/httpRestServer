@@ -2,26 +2,12 @@ package requests
 
 import (
 	"encoding/json"
-	"fmt"
 	log "httpRestServer/logging"
+	"httpRestServer/store"
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
-	"github.com/golang-jwt/jwt"
 )
-
-var jwtKey = []byte("my_secret_key_123_a_bit_better") // only suitable for dev
-
-var (
-	Store = map[string]string{"Test": "test"}
-)
-
-type StructValueObject struct {
-	Value string `json:"value"`
-	Owner string `json:"owner"`
-}
 
 // GET /ping
 // Public
@@ -32,7 +18,6 @@ func ServerIsRunningGet(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		w.WriteHeader(http.StatusOK)
-		fmt.Println("Get")
 		w.Write([]byte("pong"))
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -53,35 +38,25 @@ func UpdateStore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := strings.TrimPrefix(r.URL.Path, "/store/")
-	fmt.Println("key:", key)
-
-	fmt.Println(Store)
 
 	if key != "" {
 		switch r.Method {
 		case http.MethodGet:
 
-			var valueToShow string
-
-			for keyVal, value := range Store {
-				if keyVal == key {
-					valueToShow = value
-				}
-			}
+			valueToShow := store.UpdateStoreGet(key)
 
 			if valueToShow != "" {
 				jsonData, err := json.Marshal(valueToShow)
 
 				if err != nil {
-					fmt.Println("Problem", err)
-					http.Error(w, "Error",
-						http.StatusInternalServerError)
 					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte(`{"message": "error"}`))
-				} else {
-					w.WriteHeader(http.StatusOK)
-					w.Write(jsonData)
+					w.Write([]byte(`{"Error"}`))
+					return
 				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write(jsonData)
+
 			} else {
 				w.WriteHeader(http.StatusNotFound)
 				w.Write([]byte(`{"message": "404 key not found"}`))
@@ -90,17 +65,9 @@ func UpdateStore(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			w.WriteHeader(http.StatusOK)
 
-			var keyToShow string
+			var valueToUpdate store.StructValueObject
+			valueToUpdate.Owner = username
 
-			for keyVal, _ := range Store {
-				if keyVal == key {
-					keyToShow = keyVal
-				}
-			}
-
-			fmt.Println("username: ", username)
-
-			var valueToUpdate StructValueObject
 			decoder := json.NewDecoder(r.Body)
 			if err := decoder.Decode(&valueToUpdate); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -108,44 +75,38 @@ func UpdateStore(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if keyToShow == "" {
-				Store[key] = valueToUpdate.Value
-			} else {
-				Store[keyToShow] = valueToUpdate.Value
-			}
+			value := store.UpdateStorePut(key, valueToUpdate)
 
-			jsonData, err := json.Marshal(valueToUpdate.Value)
+			jsonData, err := json.Marshal(value)
 
 			if err != nil {
-				fmt.Println("Problem", err)
-				http.Error(w, "Error",
-					http.StatusInternalServerError)
+				http.Error(w, "Error", http.StatusInternalServerError)
 				return
-			} else {
-				w.WriteHeader(http.StatusOK)
-				w.Write(jsonData)
 			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write(jsonData)
 
 		case http.MethodDelete:
 
-			keyExists := doesKeyExistInStore(key)
+			owner := store.GetKeyValueOwner(key)
 
-			if keyExists && username == "jez" {
+			if owner != "" && username == owner {
 
-				delete(Store, key)
+				delete(store.Store, key)
+
 				w.WriteHeader(http.StatusOK)
 				w.Write([]byte("OK"))
 				return
 
-			} else if username != "jez" {
+			} else if username != owner {
 				w.WriteHeader(http.StatusForbidden) // 403
 				w.Write([]byte("Forbidden"))
 				return
-			} else {
-				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte("404 key not found"))
-				return
 			}
+
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 key not found"))
 
 		default:
 			w.WriteHeader(http.StatusNotFound)
@@ -176,27 +137,19 @@ func StoreList(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 
-		var i = 0
-		for keyVal, value := range Store {
-			fmt.Println(i, keyVal)
-			fmt.Println(i, value)
-			i++
+		items := store.StoreListGet()
+
+		w.WriteHeader(http.StatusOK)
+		jsonData, err := json.Marshal(items)
+
+		if err != nil {
+			http.Error(w, "Error", http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusOK)
-
-		jsonData, err := json.Marshal(Store)
-
-		if err != nil {
-			fmt.Println("Problem", err)
-			http.Error(w, "Error",
-				http.StatusInternalServerError)
-			return
-		} else {
-			w.WriteHeader(http.StatusOK)
-			w.Write(jsonData)
-			return
-		}
+		w.Write(jsonData)
+		return
 
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -224,34 +177,22 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 
-			var keyToShow string
-			var valueToShow string
-
-			for keyVal, value := range Store {
-				if keyVal == key {
-					keyToShow = keyVal
-					valueToShow = value
-					fmt.Printf("%s value is %v\n", keyVal, value)
-				}
-			}
+			keyToShow, valueToShow := store.StoreListKeyGet(key)
 
 			if keyToShow == "" {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"message": "not found"}`))
+				w.WriteHeader(http.StatusNotFound) //404
+				w.Write([]byte(`404 key not found`))
 				return
 			} else {
 				jsonData, err := json.Marshal(map[string]string{"key": keyToShow, "owner": valueToShow})
 
 				if err != nil {
-					fmt.Println("Problem", err)
-					http.Error(w, "Error",
-						http.StatusInternalServerError)
-					return
-				} else {
-					w.WriteHeader(http.StatusOK)
-					w.Write(jsonData)
+					http.Error(w, "Error", http.StatusInternalServerError)
 					return
 				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write(jsonData)
 			}
 
 		default:
@@ -291,57 +232,4 @@ func Shutdown(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 	}
-}
-
-// GET /login
-// Private - Authorisation required
-
-func Login(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("Content-Type", "charset=utf-8")
-
-	username, password, ok := r.BasicAuth()
-
-	if !ok || username == "" || password == "" {
-		w.WriteHeader(http.StatusUnauthorized) // 401
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet:
-
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"foo": "bar",
-			"nbf": time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-		})
-
-		// Sign and get the complete encoded token as a string using the secret
-		tokenString, err := token.SignedString(jwtKey)
-
-		if err != nil {
-			fmt.Printf("error %v", err)
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"message": "not found"}`))
-			return
-		}
-
-		fmt.Println("token2: ", tokenString, err)
-
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"Bearer":` + tokenString + `}`))
-	default:
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "not found"}`))
-	}
-}
-
-func doesKeyExistInStore(key string) bool {
-
-	for keyVal, _ := range Store {
-		if keyVal == key {
-			return true
-		}
-	}
-
-	return false
 }

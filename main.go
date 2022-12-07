@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "httpRestServer/logging"
 	req "httpRestServer/requests"
+	"httpRestServer/store"
 	"net/http"
 )
 
@@ -15,10 +16,10 @@ func main() {
 
 	log.SetupLoggers()
 
-	log.InfoLogger.Println("Starting Server")
+	log.InfoLogger.Println("Creating store")
+	store.CreateStore()
 
-	fmt.Printf("%s", req.Store["test"])
-
+	log.InfoLogger.Println("Setting up REST endpoints")
 	http.HandleFunc("/ping", req.ServerIsRunningGet)
 	http.HandleFunc("/login", req.Login)
 	http.HandleFunc("/store/", req.UpdateStore)
@@ -26,6 +27,7 @@ func main() {
 	http.HandleFunc("/list/", req.StoreListKey)
 	http.HandleFunc("/shutdown", req.Shutdown)
 
+	log.InfoLogger.Println("Starting Server")
 	fmt.Println("Server Available - see http://localhost:3000")
 	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
