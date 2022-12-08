@@ -23,7 +23,7 @@ func main() {
 
 	log.InfoLogger.Println("Setting up REST endpoints")
 	http.HandleFunc("/ping", req.ServerIsRunningGet)
-	//http.HandleFunc("/login", req.Login)
+	http.HandleFunc("/login", req.Login)
 	http.HandleFunc("/store/", req.UpdateStore)
 	http.HandleFunc("/list", req.StoreList)
 	http.HandleFunc("/list/", req.StoreListKey)
@@ -31,7 +31,7 @@ func main() {
 
 	log.InfoLogger.Println("Starting Server")
 	fmt.Println("Server Available - see http://localhost:3000")
-	err := http.ListenAndServe(":3000", nil)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		log.ErrorLogger.Println("Error starting server - ", err)
 	}

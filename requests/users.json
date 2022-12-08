@@ -1,22 +1,18 @@
 [
     { 
         "username": "user_a",
-        "password": "passwordA",
-        "role": "user"
+        "password": "passwordA"
     }, 
     { 
         "username": "user_b",
-        "password": "passwordB",
-        "role": "user"
+        "password": "passwordB"
     }, 
     { 
         "username": "user_c",
-        "password": "passwordC",
-        "role": "user"
+        "password": "passwordC"
     }, 
     { 
         "username": "admin",
-        "password": "Password1",
-        "role": "admin"
+        "password": "Password1"
     }     
 ]

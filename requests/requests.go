@@ -35,10 +35,14 @@ func ServerIsRunningGet(w http.ResponseWriter, r *http.Request) {
 
 func UpdateStore(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Print("RUNNNING Again")
-	username := r.Header.Get("Authorization")
+	fmt.Print("Still running...\n")
+	bearerToken := r.Header.Get("Authorization")
 
-	if username == "" {
+	isItValid, username := ValidateUser(bearerToken)
+
+	fmt.Println(isItValid)
+
+	if !isItValid {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
@@ -236,13 +240,25 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 
 func Shutdown(w http.ResponseWriter, r *http.Request) {
 
-	username := r.Header.Get("Authorization")
+	/* username := r.Header.Get("Authorization") */
 
-	if username == "" || username != "admin" {
+	bearerToken := r.Header.Get("Authorization")
+
+	isItValid, username := ValidateUser(bearerToken)
+
+	fmt.Println(isItValid)
+
+	if !isItValid || username != "admin" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
+
+	/* if username == "" || username != "admin" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusForbidden) // 403
+		return
+	} */
 
 	switch r.Method {
 	case http.MethodGet:
