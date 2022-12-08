@@ -197,7 +197,7 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 
-			keyToShow, valueToShow := store.MainStoreMain.StoreListKeyGet(key)
+			keyToShow, ownerToShow := store.MainStoreMain.StoreListKeyGet(key)
 
 			if keyToShow == "" {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -205,7 +205,7 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(`404 key not found`))
 				return
 			} else {
-				jsonData, err := json.Marshal(map[string]string{"key": keyToShow, "owner": valueToShow})
+				jsonData, err := json.Marshal(map[string]string{"key": keyToShow, "owner": ownerToShow})
 
 				if err != nil {
 					http.Error(w, "Error", http.StatusInternalServerError)

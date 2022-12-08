@@ -155,15 +155,15 @@ func (s *StoreMain) StoreListGet() []FormattedStructValueObject {
 func (s *StoreMain) StoreListKeyGet(key string) (string, string) {
 
 	var keyToShow string
-	var valueToShow string
+	var ownerToShow string
 
 	for keyVal, value := range s.key {
 		if string(keyVal) == key {
 			keyToShow = string(keyVal)
-			valueToShow = value.Value
+			ownerToShow = value.Owner
 			fmt.Printf("%s value is %v\n", keyVal, value)
 		}
 	}
 
-	return keyToShow, valueToShow
+	return keyToShow, ownerToShow
 }

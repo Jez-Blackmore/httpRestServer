@@ -1,0 +1,13 @@
+INFO: 2022/12/08 20:02:01 main.go:19: Creating store
+INFO: 2022/12/08 20:02:01 main.go:24: Setting up REST endpoints
+INFO: 2022/12/08 20:02:01 main.go:32: Starting Server
+INFO: 2022/12/08 20:03:13 main.go:19: Creating store
+INFO: 2022/12/08 20:03:13 main.go:24: Setting up REST endpoints
+INFO: 2022/12/08 20:03:13 main.go:32: Starting Server
+INFO: 2022/12/08 20:06:21 main.go:19: Creating store
+INFO: 2022/12/08 20:06:21 main.go:24: Setting up REST endpoints
+INFO: 2022/12/08 20:06:21 main.go:32: Starting Server
+INFO: 2022/12/08 20:07:08 main.go:19: Creating store
+INFO: 2022/12/08 20:07:08 main.go:24: Setting up REST endpoints
+INFO: 2022/12/08 20:07:08 main.go:32: Starting Server
+INFO: 2022/12/08 20:15:25 requests.go:252: Shutting Down Server
