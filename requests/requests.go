@@ -2,25 +2,31 @@ package requests
 
 import (
 	"encoding/json"
+	"fmt"
 	log "httpRestServer/logging"
 	"httpRestServer/store"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 // GET /ping
 // Public
 
 func ServerIsRunningGet(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "charset=utf-8")
 
 	switch r.Method {
 	case http.MethodGet:
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("pong"))
+		return
 	default:
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 }
 
@@ -28,92 +34,108 @@ func ServerIsRunningGet(w http.ResponseWriter, r *http.Request) {
 // Private - Authorisation required
 
 func UpdateStore(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "charset=utf-8")
 
-	username, _, ok := r.BasicAuth()
+	fmt.Print("RUNNNING Again")
+	username := r.Header.Get("Authorization")
 
-	if !ok {
+	if username == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
 
 	key := strings.TrimPrefix(r.URL.Path, "/store/")
 
+	responseData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	responseString := string(responseData)
+
 	if key != "" {
 		switch r.Method {
 		case http.MethodGet:
 
-			valueToShow := store.UpdateStoreGet(key)
+			valueToShow := store.MainStoreMain.UpdateStoreGet(key)
 
 			if valueToShow != "" {
-				jsonData, err := json.Marshal(valueToShow)
-
-				if err != nil {
-					w.WriteHeader(http.StatusBadRequest)
-					w.Write([]byte(`{"Error"}`))
-					return
-				}
-
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.WriteHeader(http.StatusOK)
-				w.Write(jsonData)
+				w.Write([]byte(valueToShow))
+				return
 
 			} else {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.WriteHeader(http.StatusNotFound)
-				w.Write([]byte(`{"message": "404 key not found"}`))
+				w.Write([]byte("404 key not found"))
+				return
 			}
 
 		case http.MethodPut:
-			w.WriteHeader(http.StatusOK)
-
 			var valueToUpdate store.StructValueObject
 			valueToUpdate.Owner = username
 
-			decoder := json.NewDecoder(r.Body)
-			if err := decoder.Decode(&valueToUpdate); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte(`{"message": "invalid payload"}`))
-				return
-			}
+			valueToUpdate.Value = responseString
 
-			value := store.UpdateStorePut(key, valueToUpdate)
+			value := store.MainStoreMain.UpdateStorePut(store.Key(key), valueToUpdate, username)
 
-			jsonData, err := json.Marshal(value)
-
-			if err != nil {
-				http.Error(w, "Error", http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusOK)
-			w.Write(jsonData)
-
-		case http.MethodDelete:
-
-			owner := store.GetKeyValueOwner(key)
-
-			if owner != "" && username == owner {
-
-				delete(store.Store, key)
-
+			if value != "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("OK"))
+				w.Write([]byte(value))
 				return
-
-			} else if username != owner {
-				w.WriteHeader(http.StatusForbidden) // 403
+			} else {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8") //403
+				w.WriteHeader(http.StatusForbidden)
 				w.Write([]byte("Forbidden"))
 				return
 			}
 
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 key not found"))
+		case http.MethodDelete:
+
+			owner := store.MainStoreMain.GetKeyValueOwner(key)
+
+			if owner == "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte("404 key not found"))
+				return
+			}
+
+			if username == owner || username == "admin" {
+
+				success := store.MainStoreMain.UpdateStoreDelete(store.Key(key))
+
+				if success {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusOK)
+					return
+				} else {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.WriteHeader(http.StatusForbidden) // 403
+					return
+				}
+
+			} else if username != owner {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusForbidden) // 403
+				return
+			} else {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte("404 key not found"))
+				return
+			}
 
 		default:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"message": "not found"}`))
+			w.Write([]byte("404 key not found"))
 			return
 		}
 	} else {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("You must provide a key"))
 		return
@@ -125,11 +147,10 @@ func UpdateStore(w http.ResponseWriter, r *http.Request) {
 
 func StoreList(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Set("Content-Type", "charset=utf-8")
+	username := r.Header.Get("Authorization")
 
-	username, _, ok := r.BasicAuth()
-
-	if !ok || username == "" {
+	if username == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
@@ -137,9 +158,8 @@ func StoreList(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 
-		items := store.StoreListGet()
+		items := store.MainStoreMain.StoreListGet()
 
-		w.WriteHeader(http.StatusOK)
 		jsonData, err := json.Marshal(items)
 
 		if err != nil {
@@ -147,6 +167,7 @@ func StoreList(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write(jsonData)
 		return
@@ -162,13 +183,12 @@ func StoreList(w http.ResponseWriter, r *http.Request) {
 // Private - Authorisation required
 
 func StoreListKey(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "charset=utf-8")
 
 	key := strings.TrimPrefix(r.URL.Path, "/list/")
 
-	username, _, ok := r.BasicAuth()
+	username := r.Header.Get("Authorization")
 
-	if !ok || username == "" {
+	if username == "" {
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
@@ -177,9 +197,10 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 
-			keyToShow, valueToShow := store.StoreListKeyGet(key)
+			keyToShow, valueToShow := store.MainStoreMain.StoreListKeyGet(key)
 
 			if keyToShow == "" {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.WriteHeader(http.StatusNotFound) //404
 				w.Write([]byte(`404 key not found`))
 				return
@@ -190,17 +211,20 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, "Error", http.StatusInternalServerError)
 					return
 				}
-
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 				w.WriteHeader(http.StatusOK)
 				w.Write(jsonData)
+				return
 			}
 
 		default:
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte("404 key not found")) // 404
 			return
 		}
 	} else {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 key not found")) // 404
 		return
@@ -211,25 +235,30 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 // Private - Authorisation required
 
 func Shutdown(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "charset=utf-8")
 
-	username, _, ok := r.BasicAuth()
+	username := r.Header.Get("Authorization")
 
-	if !ok || username == "" {
+	if username == "" || username != "admin" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
 
 	switch r.Method {
 	case http.MethodGet:
-
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 		log.InfoLogger.Println("Shutting Down Server")
-		os.Exit(0)
+		go func() {
+			time.Sleep(time.Millisecond)
+			os.Exit(0)
+		}()
 
 	default:
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 }

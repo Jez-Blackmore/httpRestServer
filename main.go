@@ -4,7 +4,7 @@ import (
 	"fmt"
 	log "httpRestServer/logging"
 	req "httpRestServer/requests"
-	"httpRestServer/store"
+	store "httpRestServer/store"
 	"net/http"
 )
 
@@ -17,11 +17,13 @@ func main() {
 	log.SetupLoggers()
 
 	log.InfoLogger.Println("Creating store")
-	store.CreateStore()
+	store.MainStoreMain = store.NewStoreMain()
+
+	go store.MainStoreMain.Monitor()
 
 	log.InfoLogger.Println("Setting up REST endpoints")
 	http.HandleFunc("/ping", req.ServerIsRunningGet)
-	http.HandleFunc("/login", req.Login)
+	//http.HandleFunc("/login", req.Login)
 	http.HandleFunc("/store/", req.UpdateStore)
 	http.HandleFunc("/list", req.StoreList)
 	http.HandleFunc("/list/", req.StoreListKey)

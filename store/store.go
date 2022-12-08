@@ -2,11 +2,23 @@ package store
 
 import "fmt"
 
-/* type Key string */
+type Key string
+
+type StoreMain struct {
+	key           map[string]StructValueObject
+	putChannel    chan StructValueObjectPut
+	deleteChannel chan Key
+}
 
 type StructValueObject struct {
 	Value string `json:"value"`
 	Owner string `json:"owner"`
+}
+
+type StructValueObjectPut struct {
+	Value string `json:"value"`
+	Owner string `json:"owner"`
+	key   Key
 }
 
 type FormattedStructValueObject struct {
@@ -15,28 +27,69 @@ type FormattedStructValueObject struct {
 }
 
 var (
-	Store          map[string]StructValueObject
+	MainStoreMain  StoreMain
 	StoreFormatted map[string]FormattedStructValueObject
 )
 
-func CreateStore() {
+func NewStoreMain() StoreMain {
 
-	Store = map[string]StructValueObject{"test": {Value: "1", Owner: "Jez"}}
+	Store := StoreMain{
 
-	storeChannel := make(chan string)
+		key:           map[string]StructValueObject{},
+		putChannel:    make(chan StructValueObjectPut),
+		deleteChannel: make(chan Key),
+	}
 
-	fmt.Println("Close store channel")
-	close(storeChannel)
+	return Store
+}
+
+func (s *StoreMain) Monitor() {
+	for {
+		select {
+		case put := <-s.putChannel:
+
+			var keyToShow string
+			var keyOwner string
+
+			for keyVal, val := range s.key {
+				if keyVal == string(put.key) {
+					keyToShow = string(keyVal)
+					keyOwner = val.Owner
+					fmt.Println("test :", val)
+				}
+			}
+			if keyToShow == "" {
+				s.key[string(put.key)] = StructValueObject{Value: put.Value, Owner: put.Owner}
+
+				s.putChannel <- StructValueObjectPut{Value: s.key[string(put.key)].Value}
+
+			} else if keyToShow != "" && keyOwner == put.Owner {
+				if thisProduct, ok := s.key[keyToShow]; ok {
+					thisProduct.Value = put.Value
+					s.key[keyToShow] = thisProduct
+				}
+
+				s.putChannel <- StructValueObjectPut{Value: s.key[string(put.key)].Value}
+			} else {
+				s.putChannel <- StructValueObjectPut{Value: ""}
+			}
+
+		case deleteVal := <-s.deleteChannel:
+			delete(s.key, string(deleteVal))
+			s.deleteChannel <- deleteVal
+			fmt.Printf("Deleted %v\n", string(deleteVal))
+		}
+	}
 }
 
 // Helper functions
-func GetKeyValueOwner(key string) string {
+func (s *StoreMain) GetKeyValueOwner(key string) string {
 
 	var owner string
 
-	for keyVal, _ := range Store {
+	for keyVal, _ := range s.key {
 		if string(keyVal) == key {
-			owner = Store[keyVal].Owner
+			owner = s.key[keyVal].Owner
 		}
 	}
 
@@ -44,10 +97,10 @@ func GetKeyValueOwner(key string) string {
 }
 
 // GET /store/<key>
-func UpdateStoreGet(key string) string {
+func (s *StoreMain) UpdateStoreGet(key string) string {
 	var valueToShow string
 
-	for keyVal, value := range Store {
+	for keyVal, value := range s.key {
 		if string(keyVal) == key {
 			valueToShow = value.Value
 		}
@@ -56,39 +109,40 @@ func UpdateStoreGet(key string) string {
 	return valueToShow
 }
 
+// DELETE /store/<key>
+
+func (s *StoreMain) UpdateStoreDelete(key Key) bool {
+
+	s.deleteChannel <- key
+
+	value := <-s.deleteChannel
+
+	if value != "" {
+		return true
+	}
+	/* delete(s.key, key) */
+	return false
+
+}
+
 // PUT /store/<key>
-func UpdateStorePut(key string, valueToUpdate StructValueObject) string {
-	var keyToShow string
 
-	for keyVal, _ := range Store {
-		if string(keyVal) == key {
-			keyToShow = string(keyVal)
-		}
-	}
+func (s *StoreMain) UpdateStorePut(key Key, valueToUpdate StructValueObject, username string) string {
 
-	if keyToShow == "" {
+	s.putChannel <- StructValueObjectPut{key: key, Value: valueToUpdate.Value, Owner: username}
 
-		Store[key] = StructValueObject{Value: valueToUpdate.Value, Owner: valueToUpdate.Owner}
+	value := <-s.putChannel
 
-	} else {
-
-		if thisProduct, ok := Store[keyToShow]; ok {
-			thisProduct.Value = valueToUpdate.Value
-			Store[keyToShow] = thisProduct
-		}
-
-	}
-
-	return Store[key].Value
+	return value.Value
 }
 
 // GET /list
-func StoreListGet() []FormattedStructValueObject {
+func (s *StoreMain) StoreListGet() []FormattedStructValueObject {
 
 	var item FormattedStructValueObject
 	var items []FormattedStructValueObject
 
-	for keyVal, value := range Store {
+	for keyVal, value := range s.key {
 		item = FormattedStructValueObject{Key: keyVal, Owner: value.Owner}
 		items = append(items, item)
 	}
@@ -98,12 +152,12 @@ func StoreListGet() []FormattedStructValueObject {
 
 // GET /list/<key>
 
-func StoreListKeyGet(key string) (string, string) {
+func (s *StoreMain) StoreListKeyGet(key string) (string, string) {
 
 	var keyToShow string
 	var valueToShow string
 
-	for keyVal, value := range Store {
+	for keyVal, value := range s.key {
 		if string(keyVal) == key {
 			keyToShow = string(keyVal)
 			valueToShow = value.Value
