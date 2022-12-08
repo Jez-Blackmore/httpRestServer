@@ -63,7 +63,7 @@ func (s *StoreMain) Monitor() {
 
 				s.putChannel <- StructValueObjectPut{Value: s.key[string(put.key)].Value}
 
-			} else if keyToShow != "" && keyOwner == put.Owner || keyOwner == "admin" {
+			} else if keyToShow != "" && keyOwner == put.Owner || put.Owner == "admin" {
 				if thisProduct, ok := s.key[keyToShow]; ok {
 					thisProduct.Value = put.Value
 					s.key[keyToShow] = thisProduct
