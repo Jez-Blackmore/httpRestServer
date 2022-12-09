@@ -30,7 +30,7 @@ func main() {
 	http.HandleFunc("/shutdown", req.Shutdown)
 
 	log.InfoLogger.Println("Starting Server")
-	fmt.Println("Server Available - see http://localhost:3000")
+	fmt.Println("Server Available - see http://localhost:8000")
 	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		log.ErrorLogger.Println("Error starting server - ", err)

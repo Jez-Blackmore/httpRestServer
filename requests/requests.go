@@ -164,6 +164,7 @@ func StoreList(w http.ResponseWriter, r *http.Request) {
 
 		items := store.MainStoreMain.StoreListGet()
 
+		/* items.delete("updated") */
 		jsonData, err := json.Marshal(items)
 
 		if err != nil {
@@ -201,15 +202,16 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 
-			keyToShow, ownerToShow := store.MainStoreMain.StoreListKeyGet(key)
+			itemObj := store.MainStoreMain.StoreListKeyGet(key)
+			/* fmt.Println(numWritesToShow, numReadsToShow, ageToShow) */
 
-			if keyToShow == "" {
+			if itemObj.Key == "" {
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
 				w.WriteHeader(http.StatusNotFound) //404
 				w.Write([]byte(`404 key not found`))
 				return
 			} else {
-				jsonData, err := json.Marshal(map[string]string{"key": keyToShow, "owner": ownerToShow})
+				jsonData, err := json.Marshal(itemObj)
 
 				if err != nil {
 					http.Error(w, "Error", http.StatusInternalServerError)
@@ -240,8 +242,6 @@ func StoreListKey(w http.ResponseWriter, r *http.Request) {
 
 func Shutdown(w http.ResponseWriter, r *http.Request) {
 
-	/* username := r.Header.Get("Authorization") */
-
 	bearerToken := r.Header.Get("Authorization")
 
 	isItValid, username := ValidateUser(bearerToken)
@@ -253,12 +253,6 @@ func Shutdown(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden) // 403
 		return
 	}
-
-	/* if username == "" || username != "admin" {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.WriteHeader(http.StatusForbidden) // 403
-		return
-	} */
 
 	switch r.Method {
 	case http.MethodGet:
